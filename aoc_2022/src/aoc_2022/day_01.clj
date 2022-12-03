@@ -24,26 +24,27 @@
      )
 ;; => 24000
 
+(defn calc-totals [data]
+  (->> data
+       (partition-by #(empty? %))
+       (remove #(= '("") %))
+       (map #(map (fn [a] (Integer/parseInt a)) %))
+       (map #(apply + %))))
 
 (def input (read-file-lines "resources/day_01_a_input.txt"))
 
 (->> input
-     (partition-by #(empty? %))
-     (remove #(= '("") %))
-     (map #(map (fn [a] (Integer/parseInt a)) %))
-     (map #(apply + %))
+     calc-totals
      (apply max)
      )
 ;; => 69795
+
 ;; End first half
 
 
 
 (->> input
-     (partition-by #(empty? %))
-     (remove #(= '("") %))
-     (map #(map (fn [a] (Integer/parseInt a)) %))
-     (map #(apply + %))
+     calc-totals
      (sort >)
      (take 3)
      (apply +)
