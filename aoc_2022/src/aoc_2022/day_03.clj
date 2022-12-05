@@ -1,6 +1,7 @@
 (ns aoc-2022.day-03
   (:require [clojure.string :as str]
             [clojure.set :as s]
+            [clojure.core.logic :as logic]
             [clojure.test :as test])
   )
 
@@ -32,4 +33,41 @@
 ;; => 157
 
 ;; run on puzzle input
-;; goodnight
+
+
+(defn read-file-lines [file]
+  (with-open [rdr (clojure.java.io/reader file)]
+    (reduce conj [] (line-seq rdr))))
+
+(def rucksacks (read-file-lines "resources/day_03_input.txt"))
+
+(apply + (map calc-priority rucksacks))
+;; => 7581
+
+;; part two
+
+(partition 3 sample-data)
+(first (first (partition 3 sample-data)))
+;; => ("vJrwpWtwJgWrhcsFMMfFFhFp" "jqHRNqRjqzjGDLGLrsFMfFZSrLrFZsSL" "PmmdzqPrVvPwwTWBwg")
+
+(logic/run* [q]
+  (logic/membero q [1 2 3])
+  (logic/membero q [2 3 4])
+  )
+;; => (2 3)
+(logic/run* [q]
+  (logic/membero q (vec (first (first (partition 3 sample-data)))))
+  (logic/membero q (vec (second (first (partition 3 sample-data)))))
+  (logic/membero q (vec (last (first (partition 3 sample-data)))))
+  )
+;; => (\r \r \r \r \r \r)
+
+(defn find-badge [group]
+  (priorities (first (logic/run* [q]
+                       (logic/membero q (vec (first group)))
+                       (logic/membero q (vec (second group)))
+                       (logic/membero q (vec (last group)))
+                       )))
+  )
+
+(apply + (map find-badge (partition 3 rucksacks)))
