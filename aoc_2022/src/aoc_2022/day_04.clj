@@ -42,7 +42,7 @@ single-assignment
 
 (apply s/intersection (map (comp set calc-assignment) (str/split a-pair #",")))
 
-(defn count-assignment-pairs [split-data]
+(defn count-overlapping-pairs [split-data]
   (count (remove false?(for [a-pair split-data]
                          (apply (fn [s1 s2] (or (s/superset? s1 s2) (s/subset? s1 s2))) (map (comp set calc-assignment) (str/split a-pair #",")))
 
@@ -53,6 +53,17 @@ single-assignment
 (first puzzle-input)
 ;; => "8-17,16-49"
 
-(count-assignment-pairs puzzle-input)
+(count-overlapping-pairs puzzle-input)
+;; => 413
+
+;; part two
+
+(defn intersecting-pairs [split-data]
+  (for [a-pair split-data]
+            (apply s/intersection (map (comp set calc-assignment) (str/split a-pair #",")))
+            )
+  )
 
 
+(count (remove true? (map empty? (seq (intersecting-pairs puzzle-input)))))
+;; => 806
