@@ -70,7 +70,6 @@ boxes
 (def stack-map (loop [i 0 columnar-oriented {}] (if (< i 3) (recur (inc i) (assoc columnar-oriented (inc i) (map #(nth % i) stacks))) columnar-oriented)))
 ;; => {1 (\space \N \Z), 2 (\D \C \M), 3 (\space \space \P)}
 
-
 ;; get instructions
 (def instructions (last (split-at (inc (count stack-map)) split-data)))
 
@@ -133,47 +132,80 @@ removed-spaces
 
     ))
   
+;; "move 1 from 2 to 1"
+(def a-source (removed-spaces 2))
+(def a-dest (removed-spaces 1))
+
+a-source 
+a-dest 
   
+(flatten (cons (take 1 a-source) a-dest))
+;; => (\D \N \Z)
+
+(nthrest a-source 1)
+
+(def b-source '(\D \N \Z))
+(def b-dest '(\P) )
+;; move 3 from 1 to 3
+(flatten (cons (take 3 b-source) b-dest))
+;; => (\D \N \Z \P)
+
+(def removed-spaces (assoc (assoc removed-spaces 1 (flatten (cons (take 1 (removed-spaces 2)) (removed-spaces 1)))) 
+                           2 (nthrest (removed-spaces 2) 1)))
+;; => {1 (\D \N \Z), 2 (\C \M), 3 (\P)}
+
+(assoc (assoc removed-spaces 3 (flatten (cons (take 3 (removed-spaces 1)) (removed-spaces 3)))) 
+       1 (nthrest (removed-spaces 1) 3))
+;; => {1 (), 2 (\C \M), 3 (\D \N \Z \P)}
+
+(nthrest '(1))
 (defn move-crates-9001 [crate-map instruction]
   (let [moves (:moves instruction)
         source (:source instruction)
         dest (:dest instruction)
         ]
 
-    ;; apply for all moves
-    (loop [i 0 cm crate-map]
-      (if (> i (dec moves))
-        cm
-        ;;more moves please
-        (recur
-         (inc i)
-         (assoc
-          (assoc
-           cm dest (cons (first (cm source)) (cm dest))) ;; add to dest
-          source (rest (cm source))) ;; remove from source
-         )
-        ))
+    (assoc (assoc crate-map dest (flatten (cons (take moves (crate-map source)) (crate-map dest)))) 
+           source (nthrest (crate-map source) moves))
 
-    ))
+   ))
+
 
 ;;working through example
 ;; completed one move instruction
 (def first-instruction (move-crates removed-spaces (translate-instruction "move 1 from 2 to 1")))
 ;; => {1 (\D \N \Z), 2 (\C \M), 3 (\P)}
 
+(def first-instruction-9001
+  (move-crates-9001 removed-spaces (translate-instruction "move 1 from 2 to 1")))
+;; => {1 (\D \N \Z), 2 (\C \M), 3 (\P)}
+
 (def second-instruction (move-crates first-instruction (translate-instruction "move 3 from 1 to 3")))
 ;; => {1 (), 2 (\C \M), 3 (\Z \N \D \P)}
+
+(def second-instruction-9001
+  (move-crates-9001 first-instruction-9001 (translate-instruction "move 3 from 1 to 3")))
+;; => {1 (), 2 (\C \M), 3 (\D \N \Z \P)}
 
 (def third-instruction (move-crates second-instruction (translate-instruction "move 2 from 2 to 1")))
 ;; => {1 (\M \C), 2 (), 3 (\Z \N \D \P)}
 
-(def fourth-instruction (move-crates third-instruction (translate-instruction "move 1 from 1 to 2")))
+(def third-instruction-9001
+  (move-crates-9001 second-instruction-9001 (translate-instruction "move 2 from 2 to 1")))
+;; => {1 (\C \M), 2 (), 3 (\D \N \Z \P)}
+
+(def fourth-instruction (move-crates third-instruction-9001 (translate-instruction "move 1 from 1 to 2")))
 ;; => {1 (\C), 2 (\M), 3 (\Z \N \D \P)}
 
+(def fourth-instruction-9001
+  (move-crates-9001 third-instruction-9001 (translate-instruction "move 1 from 1 to 2")))
+;; => {1 (\M), 2 (\C), 3 (\D \N \Z \P)}
 (apply str (map first (vals fourth-instruction)))
 ;; => "CMZ"
-
-;; automate the example
+;; part two example solution
+(apply str (map first (vals fourth-instruction-9001)))
+;; => "MCD"
+;; automatethe example
 
 ;; need to keep track of the map as it passes from instruction to instruction
 (defn rearrange [stack-map instructions]
@@ -184,15 +216,34 @@ removed-spaces
       (recur
        (move-crates sm (translate-instruction (first i)))
        (rest i)))))
+
+(defn rearrange-9001 [stack-map instructions]
+  (loop [sm stack-map
+         i instructions]
+    (if (empty? i)
+      sm
+      (recur
+       (move-crates-9001 sm (translate-instruction (first i)))
+       (rest i)))))
 ;; then take the first crate from each stack and concat them to form one string
 (rearrange removed-spaces instructions)
 ;; => {1 (\C), 2 (\M), 3 (\Z \N \D \P)}
+(rearrange-9001 removed-spaces instructions)
+;; => {1 (\M), 2 (\C), 3 (\D \N \Z \P)}
+
 (->> (rearrange removed-spaces instructions)
      vals
      (map first)
      (apply str)
      )
 ;; => "CMZ"
+
+(->> (rearrange-9001 removed-spaces instructions)
+     vals
+     (map first)
+     (apply str)
+     )
+;; => "MCD"
 
 ;; get puzzle input file
 
@@ -304,3 +355,13 @@ puzzle-input-stack-map
 ;;part two please
 
 ;; crates get moved as a unit now
+
+(->> (rearrange-9001 removed-spaces-puzzle-input puzzle-input-instructions)
+     sort
+     vals
+     (map first)
+     (apply str)
+     )
+;; => "VRQWPDSGP"
+
+;; TODO make rearrange polymorphic by providing the move function as a parameter
